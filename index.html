@@ -164,7 +164,7 @@
     const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
     // Carga de inventario en tiempo real
-    fetch(URL_API_SHEETS)
+    fetch(URL_API_SHEETS + '?v=' + new Date().getTime())
       .then(res => res.json())
       .then(data => {
         const container = document.getElementById('catalogo');
