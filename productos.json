@@ -4,7 +4,7 @@
     "nombre": "Módulo de Exhibición Tipo A",
     "medidas": "120cm (Ancho) x 60cm (Prof) x 90cm (Alto)",
     "disponibles": 4,
-    "imagen": "https://via.placeholder.com/400x250/0066cc/ffffff?text=Modulo+A",
+    "imagen": "https://dummyimage.com/400x250/0066cc/ffffff.png&text=Modulo+A",
     "planoUrl": "https://drive.google.com",
     "descripcion": "Ideal para maquetas pesadas. Ensamblable en MDF de 15mm."
   },
@@ -13,7 +13,7 @@
     "nombre": "Panel Vertical / Mampara",
     "medidas": "200cm (Alto) x 100cm (Ancho)",
     "disponibles": 6,
-    "imagen": "https://via.placeholder.com/400x250/28a745/ffffff?text=Panel+Vertical",
+    "imagen": "https://dummyimage.com/400x250/28a745/ffffff.png&text=Panel+Vertical",
     "planoUrl": "https://drive.google.com",
     "descripcion": "Superficie para fijar láminas y carteles. Armado por encaje."
   }
