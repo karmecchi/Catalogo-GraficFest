@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Mobiliario | Exposiciones</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f8f9fa; color: #333; margin: 0; padding: 20px; }
+    header { text-align: center; padding: 20px 10px; max-width: 800px; margin: 0 auto 30px auto; }
+    header img { max-height: 80px; margin-bottom: 15px; }
+    header h1 { margin: 0 0 10px 0; font-size: 1.8rem; color: #111; }
+    header p { color: #666; font-size: 0.95rem; line-height: 1.5; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }
+    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+    .card img { width: 100%; height: 200px; object-fit: cover; }
+    .card-content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+    .card-title { margin: 0 0 8px 0; font-size: 1.2rem; }
+    .badge { display: inline-block; background-color: #e9ecef; color: #495057; font-size: 0.8rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; margin-bottom: 12px; }
+    .card-info { font-size: 0.9rem; color: #555; margin-bottom: 6px; }
+    .card-desc { font-size: 0.85rem; color: #777; margin: 10px 0 20px 0; flex-grow: 1; }
+    
+    .actions { display: flex; flex-direction: column; gap: 8px; }
+    .btn { display: block; width: 100%; padding: 10px; border-radius: 6px; text-decoration: none; text-align: center; font-size: 0.9rem; font-weight: 600; transition: background 0.2s; }
+    .btn-plano { background-color: #0066cc; color: white; }
+    .btn-plano:hover { background-color: #0052a3; }
+    .btn-reserva { background-color: #28a745; color: white; }
+    .btn-reserva:hover { background-color: #218838; }
+    .btn-wsp { background-color: #25d366; color: white; }
+    .btn-wsp:hover { background-color: #1eb954; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="img/logo.png" alt="Logo Universidad / Laboratorio">
+    <h1>Mobiliario para Exposiciones</h1>
+    <p>Consulta los elementos disponibles para tu estand, descarga los planos para corte en el laboratorio o solicita la reserva / diseño personalizado.</p>
+  </header>
+
+  <main class="grid" id="catalogo"></main>
+
+  <script>
+    // Configuración general
+    const LINK_GOOGLE_FORM = "https://forms.gle/TU_LINK_DE_FORMULARIO_AQUI";
+    const NUMERO_WHATSAPP = "50760000000"; // Incluir código de país sin el signo +
+
+    // Cargar productos dinámicamente desde el JSON
+    fetch('productos.json')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('catalogo');
+        container.innerHTML = '';
+
+        data.forEach(item => {
+          const mensajeWsp = encodeURIComponent(`Hola, soy estudiante. Tengo una consulta sobre el mueble: ${item.nombre} (Código: ${item.id}).`);
+          const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensajeWsp}`;
+
+          container.innerHTML += `
+            <div class="card">
+              <img src="${item.imagen}" alt="${item.nombre}">
+              <div class="card-content">
+                <h2 class="card-title">${item.nombre}</h2>
+                <div><span class="badge">Disponibles: ${item.disponibles} unidades</span></div>
+                <div class="card-info"><strong>Medidas:</strong> ${item.medidas}</div>
+                <p class="card-desc">${item.descripcion}</p>
+                
+                <div class="actions">
+                  <a href="${item.planoUrl}" target="_blank" class="btn btn-plano">📥 Descargar Plano de Corte</a>
+                  <a href="${LINK_GOOGLE_FORM}" target="_blank" class="btn btn-reserva">📝 Solicitar / Apartar</a>
+                  <a href="${urlWsp}" target="_blank" class="btn btn-wsp">💬 Consultar por WhatsApp</a>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      })
+      .catch(err => console.error("Error al cargar el catálogo:", err));
+  </script>
+</body>
+</html>
