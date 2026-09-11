@@ -165,20 +165,36 @@
           const mensajeWsp = encodeURIComponent(`Hola, soy estudiante de GraficFest. Consulto sobre: ${item.nombre} (${item.id}).`);
           const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensajeWsp}`;
 
+          // Determinar la etiqueta y el botón según el tipo de recurso
+          let badgeTipo = "";
+          let btnPrincipal = "";
+
+          if (item.tipo === "corte") {
+            badgeTipo = `<span class="tag" style="background:#e3f2fd; color:#0d47a1;">📐 Para Corte CNC</span>`;
+            btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📥 Descargar Planos (.DXF)</a>`;
+          } else if (item.tipo === "equipo") {
+            badgeTipo = `<span class="tag" style="background:#fff3e0; color:#e65100;">📺 Equipo Préstamo</span>`;
+            btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📄 Ficha Técnica / Manual</a>`;
+          } else {
+            badgeTipo = `<span class="tag" style="background:#f3e5f5; color:#4a148c;">🎨 Material / Impresión</span>`;
+            btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📐 Plantilla de Diseño</a>`;
+          }
+
           container.innerHTML += `
             <div class="card">
               <img src="${item.imagen}" class="card-img" alt="${item.nombre}">
               <div class="card-body">
                 <div>
+                  <div style="margin-bottom: 8px;">${badgeTipo}</div>
                   <h3 class="card-title">${item.nombre}</h3>
-                  <p class="card-meta">${item.medidas}</p>
+                  <p class="card-meta"><strong>Medidas:</strong> ${item.medidas}</p>
                   <p class="card-status">Stock: ${item.disponibles} unds.</p>
                 </div>
                 
                 <div class="card-actions">
-                  <a href="${item.planoUrl}" target="_blank" class="btn btn-dark">Planos de Corte</a>
-                  <a href="${LINK_GOOGLE_FORM}" target="_blank" class="btn btn-outline">Solicitar / Apartar</a>
-                  <a href="${urlWsp}" target="_blank" class="btn btn-wsp">WhatsApp</a>
+                  ${btnPrincipal}
+                  <a href="${LINK_GOOGLE_FORM}" target="_blank" class="btn btn-outline">📝 Solicitar / Apartar</a>
+                  <a href="${urlWsp}" target="_blank" class="btn btn-wsp">💬 Consultar WhatsApp</a>
                 </div>
               </div>
             </div>
@@ -187,5 +203,3 @@
       })
       .catch(err => console.error("Error al cargar productos:", err));
   </script>
-</body>
-</html>
