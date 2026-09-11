@@ -159,9 +159,12 @@
     // Configuración general
     const LINK_GOOGLE_FORM = "https://forms.gle/TU_LINK_DE_FORMULARIO_AQUI";
     const NUMERO_WHATSAPP = "50760000000";
+    
+    // Tu API activa de Google Sheets
+    const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
-    // Carga de inventario desde el archivo JSON
-    fetch('productos.json?v=' + new Date().getTime())
+    // Carga de inventario en tiempo real
+    fetch(URL_API_SHEETS)
       .then(res => res.json())
       .then(data => {
         const container = document.getElementById('catalogo');
@@ -207,7 +210,7 @@
           `;
         });
       })
-      .catch(err => console.error("Error al cargar productos:", err));
+      .catch(err => console.error("Error al cargar el inventario desde Sheets:", err));
   </script>
 </body>
 </html>
