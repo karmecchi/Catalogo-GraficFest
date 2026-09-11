@@ -2,19 +2,31 @@
   {
     "id": "M01",
     "nombre": "Módulo de Exhibición Tipo A",
-    "medidas": "120cm (Ancho) x 60cm (Prof) x 90cm (Alto)",
+    "tipo": "corte",
+    "medidas": "120 x 60 x 90 cm",
     "disponibles": 4,
     "imagen": "img/IconoDe_imagen.png",
     "planoUrl": "https://drive.google.com",
-    "descripcion": "Ideal para maquetas pesadas. Ensamblable en MDF de 15mm."
+    "descripcion": "Estructura armable en MDF 15mm para corte en laboratorio."
   },
   {
-    "id": "M02",
-    "nombre": "Panel Vertical / Mampara",
-    "medidas": "200cm (Alto) x 100cm (Ancho)",
-    "disponibles": 6,
+    "id": "E01",
+    "nombre": "Pantalla TV 55\" con Soporte",
+    "tipo": "equipo",
+    "medidas": "55 pulgadas (Incluye base)",
+    "disponibles": 2,
     "imagen": "img/IconoDe_imagen.png",
     "planoUrl": "https://drive.google.com",
-    "descripcion": "Superficie para fijar láminas y carteles. Armado por encaje."
+    "descripcion": "Entradas HDMI/USB. Incluye cableado y soporte de pie."
+  },
+  {
+    "id": "V01",
+    "nombre": "Impresión de Vinilo Blanco / Mate",
+    "tipo": "material",
+    "medidas": "Ancho máx: 150 cm",
+    "disponibles": 10,
+    "imagen": "img/IconoDe_imagen.png",
+    "planoUrl": "https://drive.google.com",
+    "descripcion": "Para rotulación de estand. Requiere enviar archivo vectorial previo."
   }
 ]
