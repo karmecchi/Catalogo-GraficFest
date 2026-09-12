@@ -60,6 +60,7 @@
     .btn-dark { background: #111; color: #fff; }
     .btn-outline { border: 1px solid #ccc; color: #333; background: #fff; }
     .btn-add { background: #0071e3; color: #fff; }
+    .btn-wsp { background: #25d366; color: #fff; font-size: 0.85rem; padding: 10px; margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
     .no-results { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #888; font-size: 0.9rem; }
 
@@ -84,8 +85,14 @@
     .qty-number { font-size: 0.8rem; font-weight: 600; }
     .delete-item { color: #e53935; border: none; background: none; cursor: pointer; font-size: 0.9rem; padding: 4px; }
 
+    /* Formulario dentro del Carrito */
+    .cart-form { border-top: 1px solid #eaeaea; padding-top: 15px; margin-top: 10px; }
+    .cart-form-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: #444; }
+    .cart-input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px; outline: none; }
+    .cart-input:focus { border-color: #111; }
+
     .drawer-footer { padding: 20px; border-top: 1px solid #eaeaea; background: #fafafa; }
-    .total-summary { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.95rem; margin-bottom: 15px; }
+    .total-summary { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; }
 
     /* Footer */
     footer { border-top: 1px solid #eaeaea; background: #fff; padding: 40px; margin-top: auto; display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; }
@@ -171,8 +178,17 @@
       <button class="close-drawer" id="close-cart">✕</button>
     </div>
     
-    <div class="drawer-content" id="cart-items-container">
-      <!-- Los elementos del pedido se insertan dinámicamente aquí -->
+    <div class="drawer-content">
+      <div id="cart-items-container">
+        <!-- Los elementos del pedido se insertan dinámicamente aquí -->
+      </div>
+
+      <!-- Datos del Estudiante -->
+      <div class="cart-form" id="cart-form-section" style="display: none;">
+        <div class="cart-form-title">Datos del Solicitante:</div>
+        <input type="text" id="student-name" class="cart-input" placeholder="Nombre Completo...">
+        <input type="text" id="student-id" class="cart-input" placeholder="Cédula / Matrícula / Proyecto...">
+      </div>
     </div>
 
     <div class="drawer-footer">
@@ -180,7 +196,10 @@
         <span>Total de elementos:</span>
         <span id="total-qty">0 unidades</span>
       </div>
-      <p style="font-size: 0.75rem; color: #666; text-align: center;">En el siguiente paso podrás enviar esta lista para revisión.</p>
+      
+      <button id="btn-send-whatsapp" onclick="enviarPedidoWhatsApp()" class="btn btn-wsp" style="display: none;">
+        💬 Enviar Pedido por WhatsApp
+      </button>
     </div>
   </div>
 
@@ -203,11 +222,13 @@
   </footer>
 
   <script>
+    // --- CONFIGURACIÓN DE CONTACTO Y API ---
+    const NUMERO_WHATSAPP = "50764595106"; // Tu teléfono con código de Panamá (507)
     const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
     let inventarioCompleto = [];
     let criterioOrden = "todos";
-    let carrito = []; // Guarda los productos seleccionados
+    let carrito = [];
 
     // Cargar inventario desde Sheets
     fetch(URL_API_SHEETS + '?v=' + new Date().getTime())
@@ -323,6 +344,8 @@
       const container = document.getElementById('cart-items-container');
       const cartCount = document.getElementById('cart-count');
       const totalQty = document.getElementById('total-qty');
+      const formSection = document.getElementById('cart-form-section');
+      const btnWsp = document.getElementById('btn-send-whatsapp');
 
       const totalPiezas = carrito.reduce((sum, item) => sum + item.cantidad, 0);
       cartCount.innerText = totalPiezas;
@@ -332,8 +355,13 @@
 
       if (carrito.length === 0) {
         container.innerHTML = `<p style="text-align: center; color: #888; font-size: 0.85rem; margin-top: 40px;">Tu lista de pedido está vacía.</p>`;
+        formSection.style.display = "none";
+        btnWsp.style.display = "none";
         return;
       }
+
+      formSection.style.display = "block";
+      btnWsp.style.display = "flex";
 
       carrito.forEach(item => {
         container.innerHTML += `
@@ -352,6 +380,34 @@
           </div>
         `;
       });
+    }
+
+    // --- ENVIAR MENSAJE POR WHATSAPP ---
+    function enviarPedidoWhatsApp() {
+      const nombre = document.getElementById('student-name').value.trim();
+      const idEstudiante = document.getElementById('student-id').value.trim();
+
+      if (!nombre) {
+        alert("Por favor ingresa tu nombre completo antes de enviar.");
+        return;
+      }
+
+      let mensaje = `*¡Hola! Deseo realizar el siguiente pedido para GraficFest:*\n\n`;
+      mensaje += `👤 *Solicitante:* ${nombre}\n`;
+      mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n\n`;
+      mensaje += `📦 *Resumen del Pedido:*\n`;
+
+      let totalUnidades = 0;
+      carrito.forEach(item => {
+        mensaje += `• ${item.cantidad}x ${item.nombre} (ID: ${item.id})\n`;
+        totalUnidades += item.cantidad;
+      });
+
+      mensaje += `\n📊 *Total de piezas:* ${totalUnidades}\n\n`;
+      mensaje += `Quedo a la espera de su confirmación. ¡Gracias!`;
+
+      const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+      window.open(url, '_blank');
     }
 
     // Abrir / Cerrar Drawer
