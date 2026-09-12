@@ -23,8 +23,6 @@
     aside { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
     .filter-group { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #eaeaea; }
     .filter-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; color: #666; }
-    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
-    .tag-filter { background: #f0f0f0; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; color: #333; display: flex; align-items: center; gap: 5px; cursor: pointer; }
     .checkbox-list { display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: #444; }
     .checkbox-list label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 
@@ -58,6 +56,8 @@
     .btn-dark { background: #111; color: #fff; }
     .btn-outline { border: 1px solid #ccc; color: #333; background: #fff; }
     .btn-wsp { background: #25d366; color: #fff; }
+
+    .no-results { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #888; font-size: 0.9rem; }
 
     /* Footer */
     footer { border-top: 1px solid #eaeaea; background: #fff; padding: 40px; margin-top: auto; display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; }
@@ -94,24 +94,16 @@
     <!-- Sidebar / Filtros -->
     <aside>
       <div class="filter-group">
-        <div class="filter-title">Etiquetas</div>
-        <div class="tags">
-          <span class="tag-filter">Exposición ×</span>
-          <span class="tag-filter">MDF ×</span>
-          <span class="tag-filter">Modular ×</span>
-        </div>
-
-        <div class="filter-title" style="margin-top: 15px;">Tipo de Recurso</div>
+        <div class="filter-title">Tipo de Recurso</div>
         <div class="checkbox-list">
-          <label><input type="checkbox" checked> Corte CNC / Fab</label>
-          <label><input type="checkbox" checked> Equipos Electrónicos</label>
-          <label><input type="checkbox" checked> Vinilos y Acabados</label>
+          <label><input type="checkbox" class="filter-tipo" value="corte" checked> Corte CNC / Fab</label>
+          <label><input type="checkbox" class="filter-tipo" value="equipo" checked> Equipos Electrónicos</label>
+          <label><input type="checkbox" class="filter-tipo" value="material" checked> Vinilos y Acabados</label>
         </div>
 
         <div class="filter-title" style="margin-top: 20px;">Disponibilidad</div>
         <div class="checkbox-list">
-          <label><input type="checkbox" checked> Stock Inmediato</label>
-          <label><input type="checkbox" checked> Fabricación a Solicitud</label>
+          <label><input type="checkbox" id="filter-stock" checked> Solo con stock disponible</label>
         </div>
       </div>
     </aside>
@@ -122,12 +114,12 @@
       <div class="toolbar">
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Buscar recurso o mueble...">
+          <input type="text" id="search-input" placeholder="Buscar recurso o mueble...">
         </div>
         <div class="sort-options">
-          <button class="sort-btn active">Todos</button>
-          <button class="sort-btn">Disponibles</button>
-          <button class="sort-btn">Corte Rápido</button>
+          <button class="sort-btn active" data-sort="todos">Todos</button>
+          <button class="sort-btn" data-sort="stock">Mayor Stock</button>
+          <button class="sort-btn" data-sort="nombre">A-Z</button>
         </div>
       </div>
 
@@ -156,61 +148,122 @@
   </footer>
 
   <script>
-    // Configuración general
     const LINK_GOOGLE_FORM = "https://forms.gle/TU_LINK_DE_FORMULARIO_AQUI";
     const NUMERO_WHATSAPP = "50760000000";
-    
-    // Tu API activa de Google Sheets
     const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
-    // Carga de inventario en tiempo real
+    // Variables globales para guardar inventario y estado
+    let inventarioCompleto = [];
+    let criterioOrden = "todos";
+
+    // Carga de inventario desde Google Sheets
     fetch(URL_API_SHEETS + '?v=' + new Date().getTime())
       .then(res => res.json())
       .then(data => {
-        const container = document.getElementById('catalogo');
-        container.innerHTML = '';
+        inventarioCompleto = data;
+        renderizarCatalogo();
+      })
+      .catch(err => console.error("Error al cargar el inventario:", err));
 
-        data.forEach(item => {
-          const mensajeWsp = encodeURIComponent(`Hola, soy estudiante de GraficFest. Consulto sobre: ${item.nombre} (ID: ${item.id}).`);
-          const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensajeWsp}`;
+    // Función principal para filtrar, ordenar y renderizar las tarjetas
+    function renderizarCatalogo() {
+      const container = document.getElementById('catalogo');
+      const textoBusqueda = document.getElementById('search-input').value.toLowerCase().trim();
+      const soloStock = document.getElementById('filter-stock').checked;
+      
+      // Obtener tipos seleccionados en los checkboxes
+      const tiposSeleccionados = Array.from(document.querySelectorAll('.filter-tipo:checked')).map(cb => cb.value);
 
-          // Adaptar etiquetas y botones según la categoría del objeto
-          let badgeTipo = "";
-          let btnPrincipal = "";
+      // 1. Filtrar productos
+      let productosFiltrados = inventarioCompleto.filter(item => {
+        // Filtro por texto (nombre, id o descripción)
+        const coincideTexto = (item.nombre || '').toLowerCase().includes(textoBusqueda) ||
+                              (item.id || '').toLowerCase().includes(textoBusqueda) ||
+                              (item.descripcion || '').toLowerCase().includes(textoBusqueda);
 
-          if (item.tipo === "corte") {
-            badgeTipo = `<span class="badge-tipo" style="background:#e3f2fd; color:#0d47a1;">📐 Para Corte CNC</span>`;
-            btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📥 Descargar Planos (.DXF)</a>`;
-          } else if (item.tipo === "equipo") {
-            badgeTipo = `<span class="badge-tipo" style="background:#fff3e0; color:#e65100;">📺 Equipo Préstamo</span>`;
-            btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📄 Ficha Técnica / Manual</a>`;
-          } else {
-            badgeTipo = `<span class="badge-tipo" style="background:#f3e5f5; color:#4a148c;">🎨 Material / Impresión</span>`;
-            btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📐 Plantilla de Diseño</a>`;
-          }
+        // Filtro por tipo
+        const coincideTipo = tiposSeleccionados.includes(item.tipo);
 
-          container.innerHTML += `
-            <div class="card">
-              <img src="${item.imagen}" class="card-img" alt="${item.nombre}">
-              <div class="card-body">
-                <div>
-                  <div style="margin-bottom: 8px;">${badgeTipo}</div>
-                  <h3 class="card-title">${item.nombre}</h3>
-                  <p class="card-meta"><strong>Medidas:</strong> ${item.medidas}</p>
-                  <p class="card-status">Stock: ${item.disponibles} unds.</p>
-                </div>
-                
-                <div class="card-actions">
-                  ${btnPrincipal}
-                  <a href="${LINK_GOOGLE_FORM}" target="_blank" class="btn btn-outline">📝 Solicitar / Apartar</a>
-                  <a href="${urlWsp}" target="_blank" class="btn btn-wsp">💬 Consultar WhatsApp</a>
-                </div>
+        // Filtro por stock
+        const coincideStock = soloStock ? (parseInt(item.disponibles) > 0) : true;
+
+        return coincideTexto && coincideTipo && coincideStock;
+      });
+
+      // 2. Ordenar productos
+      if (criterioOrden === "stock") {
+        productosFiltrados.sort((a, b) => (parseInt(b.disponibles) || 0) - (parseInt(a.disponibles) || 0));
+      } else if (criterioOrden === "nombre") {
+        productosFiltrados.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      }
+
+      // 3. Imprimir tarjetas en pantalla
+      container.innerHTML = '';
+
+      if (productosFiltrados.length === 0) {
+        container.innerHTML = `<div class="no-results">No se encontraron recursos que coincidan con la búsqueda.</div>`;
+        return;
+      }
+
+      productosFiltrados.forEach(item => {
+        const mensajeWsp = encodeURIComponent(`Hola, soy estudiante de GraficFest. Consulto sobre: ${item.nombre} (ID: ${item.id}).`);
+        const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensajeWsp}`;
+
+        let badgeTipo = "";
+        let btnPrincipal = "";
+
+        if (item.tipo === "corte") {
+          badgeTipo = `<span class="badge-tipo" style="background:#e3f2fd; color:#0d47a1;">📐 Para Corte CNC</span>`;
+          btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📥 Descargar Planos (.DXF)</a>`;
+        } else if (item.tipo === "equipo") {
+          badgeTipo = `<span class="badge-tipo" style="background:#fff3e0; color:#e65100;">📺 Equipo Préstamo</span>`;
+          btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📄 Ficha Técnica / Manual</a>`;
+        } else {
+          badgeTipo = `<span class="badge-tipo" style="background:#f3e5f5; color:#4a148c;">🎨 Material / Impresión</span>`;
+          btnPrincipal = `<a href="${item.planoUrl}" target="_blank" class="btn btn-dark">📐 Plantilla de Diseño</a>`;
+        }
+
+        container.innerHTML += `
+          <div class="card">
+            <img src="${item.imagen}" class="card-img" alt="${item.nombre}" onerror="this.src='img/IconoDe_imagen.png'">
+            <div class="card-body">
+              <div>
+                <div style="margin-bottom: 8px;">${badgeTipo}</div>
+                <h3 class="card-title">${item.nombre}</h3>
+                <p class="card-meta"><strong>Medidas:</strong> ${item.medidas}</p>
+                <p class="card-status">Stock: ${item.disponibles} unds.</p>
+              </div>
+              
+              <div class="card-actions">
+                ${btnPrincipal}
+                <a href="${LINK_GOOGLE_FORM}" target="_blank" class="btn btn-outline">📝 Solicitar / Apartar</a>
+                <a href="${urlWsp}" target="_blank" class="btn btn-wsp">💬 Consultar WhatsApp</a>
               </div>
             </div>
-          `;
-        });
-      })
-      .catch(err => console.error("Error al cargar el inventario desde Sheets:", err));
+          </div>
+        `;
+      });
+    }
+
+    // --- EVENT LISTENERS (Escuchar interacción del usuario) ---
+
+    // Evento de búsqueda por texto
+    document.getElementById('search-input').addEventListener('input', renderizarCatalogo);
+
+    // Eventos de checkboxes (Tipo y Stock)
+    document.querySelectorAll('.filter-tipo').forEach(cb => cb.addEventListener('change', renderizarCatalogo));
+    document.getElementById('filter-stock').addEventListener('change', renderizarCatalogo);
+
+    // Eventos de botones de ordenamiento
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        criterioOrden = e.target.getAttribute('data-sort');
+        renderizarCatalogo();
+      });
+    });
   </script>
 </body>
 </html>
+
