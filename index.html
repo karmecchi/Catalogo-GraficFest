@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catálogo GraficFest | Mobiliario y Recursos</title>
+  
+  <!-- Librería para Generación de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: #fafafa; color: #111; display: flex; flex-direction: column; min-height: 100vh; }
@@ -58,9 +62,8 @@
     .btn { display: block; text-align: center; padding: 7px 10px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; transition: opacity 0.2s; cursor: pointer; border: none; }
     .btn:hover { opacity: 0.85; }
     .btn-dark { background: #111; color: #fff; }
-    .btn-outline { border: 1px solid #ccc; color: #333; background: #fff; }
     .btn-add { background: #0071e3; color: #fff; }
-    .btn-wsp { background: #25d366; color: #fff; font-size: 0.85rem; padding: 10px; margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-wsp { background: #25d366; color: #fff; font-size: 0.85rem; padding: 12px; margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
     .no-results { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #888; font-size: 0.9rem; }
 
@@ -151,7 +154,6 @@
 
     <!-- Área Principal de Productos -->
     <main>
-      <!-- Barra de Búsqueda y Orden -->
       <div class="toolbar">
         <div class="search-box">
           <span class="search-icon">🔍</span>
@@ -164,7 +166,6 @@
         </div>
       </div>
 
-      <!-- Grid de Tarjetas -->
       <div class="grid" id="catalogo"></div>
     </main>
 
@@ -179,9 +180,7 @@
     </div>
     
     <div class="drawer-content">
-      <div id="cart-items-container">
-        <!-- Los elementos del pedido se insertan dinámicamente aquí -->
-      </div>
+      <div id="cart-items-container"></div>
 
       <!-- Datos del Estudiante -->
       <div class="cart-form" id="cart-form-section" style="display: none;">
@@ -197,8 +196,8 @@
         <span id="total-qty">0 unidades</span>
       </div>
       
-      <button id="btn-send-whatsapp" onclick="enviarPedidoWhatsApp()" class="btn btn-wsp" style="display: none;">
-        💬 Enviar Pedido por WhatsApp
+      <button id="btn-send-whatsapp" onclick="procesarPedidoYPDF()" class="btn btn-wsp" style="display: none;">
+        📄 Generar PDF y Abrir WhatsApp
       </button>
     </div>
   </div>
@@ -222,8 +221,7 @@
   </footer>
 
   <script>
-    // --- CONFIGURACIÓN DE CONTACTO Y API ---
-    const NUMERO_WHATSAPP = "50764595106"; // Tu teléfono con código de Panamá (507)
+    const NUMERO_WHATSAPP = "50764595106";
     const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
     let inventarioCompleto = [];
@@ -239,7 +237,6 @@
       })
       .catch(err => console.error("Error al cargar inventario:", err));
 
-    // Renderizar catálogo
     function renderizarCatalogo() {
       const container = document.getElementById('catalogo');
       const textoBusqueda = document.getElementById('search-input').value.toLowerCase().trim();
@@ -303,8 +300,7 @@
       });
     }
 
-    // --- LÓGICA DE LA LISTA DE PEDIDOS (CARRITO) ---
-
+    // --- LÓGICA CARRITO ---
     function agregarAlCarrito(idProducto) {
       const producto = inventarioCompleto.find(p => p.id === idProducto);
       if (!producto) return;
@@ -382,32 +378,86 @@
       });
     }
 
-    // --- ENVIAR MENSAJE POR WHATSAPP ---
-    function enviarPedidoWhatsApp() {
+    // --- GENERACIÓN DE PDF Y REDIRECCIÓN A WHATSAPP ---
+    function procesarPedidoYPDF() {
       const nombre = document.getElementById('student-name').value.trim();
       const idEstudiante = document.getElementById('student-id').value.trim();
 
       if (!nombre) {
-        alert("Por favor ingresa tu nombre completo antes de enviar.");
+        alert("Por favor ingresa tu nombre completo antes de continuar.");
         return;
       }
 
-      let mensaje = `*¡Hola! Deseo realizar el siguiente pedido para GraficFest:*\n\n`;
-      mensaje += `👤 *Solicitante:* ${nombre}\n`;
-      mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n\n`;
-      mensaje += `📦 *Resumen del Pedido:*\n`;
+      // 1. Generar Documento PDF
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
 
+      // Encabezado
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("GRAFICFEST 2026", 20, 20);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text("Solicitud Oficial de Mobiliario y Recursos", 20, 28);
+      doc.line(20, 32, 190, 32);
+
+      // Datos del Estudiante
+      doc.setFontSize(10);
+      doc.text(`Solicitante: ${nombre}`, 20, 42);
+      doc.text(`Matrícula / Proyecto: ${idEstudiante || 'N/A'}`, 20, 48);
+      doc.text(`Fecha: ${new Date().toLocaleDateString('es-PA')}`, 20, 54);
+
+      // Encabezado de Tabla
+      doc.setFont("helvetica", "bold");
+      doc.text("ID", 20, 66);
+      doc.text("Recurso", 45, 66);
+      doc.text("Medidas", 120, 66);
+      doc.text("Cant.", 170, 66);
+      doc.line(20, 68, 190, 68);
+
+      // Filas de Productos
+      doc.setFont("helvetica", "normal");
+      let y = 76;
       let totalUnidades = 0;
+
       carrito.forEach(item => {
-        mensaje += `• ${item.cantidad}x ${item.nombre} (ID: ${item.id})\n`;
+        doc.text(String(item.id), 20, y);
+        doc.text(String(item.nombre).substring(0, 35), 45, y);
+        doc.text(String(item.medidas || 'N/A').substring(0, 20), 120, y);
+        doc.text(String(item.cantidad), 170, y);
         totalUnidades += item.cantidad;
+        y += 8;
       });
 
-      mensaje += `\n📊 *Total de piezas:* ${totalUnidades}\n\n`;
-      mensaje += `Quedo a la espera de su confirmación. ¡Gracias!`;
+      doc.line(20, y, 190, y);
+      y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total de Piezas Solicitadas: ${totalUnidades}`, 120, y);
 
-      const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
-      window.open(url, '_blank');
+      // Firma
+      y += 35;
+      doc.line(20, y, 80, y);
+      doc.line(120, y, 180, y);
+      doc.setFontSize(8);
+      doc.text("Firma del Estudiante", 30, y + 5);
+      doc.text("Aprobación Laboratorio / Profesor", 125, y + 5);
+
+      // Descargar PDF
+      const nombreArchivo = `Solicitud_GraficFest_${nombre.replace(/\s+/g, '_')}.pdf`;
+      doc.save(nombreArchivo);
+
+      // 2. Abrir WhatsApp con Mensaje Pre-armado
+      let mensaje = `*¡Hola! He generado mi solicitud en PDF para GraficFest:*\n\n`;
+      mensaje += `👤 *Solicitante:* ${nombre}\n`;
+      mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n`;
+      mensaje += `📊 *Total de piezas:* ${totalUnidades}\n\n`;
+      mensaje += `📎 *Te adjunto el documento PDF descargado para su revisión.*`;
+
+      const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+      
+      setTimeout(() => {
+        window.open(urlWsp, '_blank');
+      }, 1000);
     }
 
     // Abrir / Cerrar Drawer
@@ -428,7 +478,7 @@
     document.getElementById('close-cart').addEventListener('click', cerrarDrawer);
     overlay.addEventListener('click', cerrarDrawer);
 
-    // Eventos Filtros y Búsqueda
+    // Eventos Filtros
     document.getElementById('search-input').addEventListener('input', renderizarCatalogo);
     document.querySelectorAll('.filter-tipo').forEach(cb => cb.addEventListener('change', renderizarCatalogo));
     document.getElementById('filter-stock').addEventListener('change', renderizarCatalogo);
