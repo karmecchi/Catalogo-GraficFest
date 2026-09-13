@@ -132,10 +132,12 @@
     .drawer-footer { padding: 20px; border-top: 1px solid var(--border-color); background: var(--card-bg); }
     .total-summary { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; color: var(--text-color); }
 
-    /* Footer */
+    /* Footer Estilizado */
     footer { border-top: 1px solid var(--border-color); background: var(--header-bg); padding: 40px; margin-top: auto; display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); }
     .footer-col { display: flex; flex-direction: column; gap: 8px; }
     .footer-title { font-weight: 600; color: var(--text-color); margin-bottom: 4px; }
+    .footer-link { text-decoration: none; color: inherit; transition: color 0.2s; }
+    .footer-link:hover { color: var(--text-color); }
 
     @media (max-width: 850px) {
       .container { flex-direction: column; padding: 15px; }
@@ -239,13 +241,13 @@
           💬 Enviar por WhatsApp
         </button>
         <button onclick="enviarPedido('email')" class="btn btn-email">
-          ✉️ Enviar con Gmail Web
+          ✉️ Enviar por Correo Electrónico
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Footer Minimalista -->
+  <!-- Footer Actualizado -->
   <footer>
     <div class="footer-col">
       <div class="footer-title">GraficFest 2026</div>
@@ -253,13 +255,13 @@
     </div>
     <div class="footer-col">
       <div class="footer-title">Recursos</div>
-      <p>Descarga de Planos Vectoriales (.DXF)</p>
+      <p>Formatos Digitales</p>
       <p>Normativa del Laboratorio de Fabricación</p>
     </div>
     <div class="footer-col">
       <div class="footer-title">Contacto Directo</div>
-      <p>Atención por WhatsApp</p>
-      <p>Asesoría de Diseño Personalizado</p>
+      <p><a href="https://wa.me/50764595106" target="_blank" class="footer-link">💬 Atención por WhatsApp</a></p>
+      <p><a href="mailto:adrian.mendez1750@gmail.com" class="footer-link">✉️ Enviar Correo Electrónico</a></p>
     </div>
   </footer>
 
@@ -280,7 +282,6 @@
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
 
-    // Cargar preferenciaGuardada
     if (localStorage.getItem('theme') === 'dark') {
       document.body.classList.add('dark-mode');
       document.getElementById('theme-btn').innerText = "☀️ Modo Claro";
@@ -436,7 +437,7 @@
       });
     }
 
-    // --- GENERACIÓN DE PDF Y PROCESAMIENTO DE ENVÍOS ---
+    // --- GENERACIÓN DE PDF Y ENVÍOS ---
     function generarPDF(nombre, idEstudiante) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -495,33 +496,33 @@
     function enviarPedido(canal) {
       const nombre = document.getElementById('student-name').value.trim();
       const idEstudiante = document.getElementById('student-id').value.trim();
-    
+
       if (!nombre) {
         alert("Por favor ingresa tu nombre completo antes de continuar.");
         return;
       }
-    
-      // Generar PDF para el estudiante
+
+      // Descarga local de comprobante PDF
       const totalPiezas = generarPDF(nombre, idEstudiante);
-    
+
       if (canal === 'whatsapp') {
         let mensaje = `*¡Hola! He generado mi solicitud en PDF para GraficFest:*\n\n`;
         mensaje += `👤 *Solicitante:* ${nombre}\n`;
         mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n`;
         mensaje += `📊 *Total de piezas:* ${totalPiezas}\n\n`;
-        mensaje += `📎 *Te adjunto el documento PDF descargado para su revisión.*`;
-    
+        mensaje += `📎 *He descargado mi solicitud en PDF para su validación.*`;
+
         const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
         setTimeout(() => window.open(urlWsp, '_blank'), 1000);
-    
+
       } else if (canal === 'email') {
-        // Envío automático silencioso por Apps Script
+        // Enviar pedido silenciosamente vía POST a tu Apps Script
         const payload = {
           nombre: nombre,
           idEstudiante: idEstudiante,
           carrito: carrito
         };
-    
+
         fetch(URL_API_SHEETS, {
           method: 'POST',
           mode: 'no-cors',
@@ -529,27 +530,19 @@
           body: JSON.stringify(payload)
         })
         .then(() => {
-          alert("¡Solicitud enviada con éxito! Se ha notificado por correo electrónico a la administración y se ha guardado una copia en tu dispositivo.");
+          alert("¡Solicitud enviada con éxito! Se ha notificado por correo electrónico a la administración y se descargó una copia en tu dispositivo.");
           carrito = [];
           actualizarCarritoUI();
           cerrarDrawer();
         })
         .catch(err => {
           console.error(err);
-          alert("Ocurrió un error al enviar el correo automático.");
+          alert("Ocurrió un error al procesar la solicitud.");
         });
       }
     }
 
-        cuerpo += `\n*Nota: Se ha descargado el PDF oficial en mi dispositivo y lo he adjuntado a este correo.*\n\nSaludos.`;
-
-        // URL Directa para abrir composición en Gmail Web en nueva pestaña
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${CORREO_DESTINO}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-        setTimeout(() => window.open(gmailUrl, '_blank'), 1000);
-      }
-    }
-
-    // Abrir / Cerrar Drawer
+    // Controles de Apertura / Cierre de Drawer
     const overlay = document.getElementById('cart-overlay');
     const drawer = document.getElementById('cart-drawer');
 
@@ -567,7 +560,7 @@
     document.getElementById('close-cart').addEventListener('click', cerrarDrawer);
     overlay.addEventListener('click', cerrarDrawer);
 
-    // Eventos Filtros
+    // Filtros e Interacción
     document.getElementById('search-input').addEventListener('input', renderizarCatalogo);
     document.querySelectorAll('.filter-tipo').forEach(cb => cb.addEventListener('change', renderizarCatalogo));
     document.getElementById('filter-stock').addEventListener('change', renderizarCatalogo);
