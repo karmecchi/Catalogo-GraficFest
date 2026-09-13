@@ -496,48 +496,46 @@
     function enviarPedido(canal) {
       const nombre = document.getElementById('student-name').value.trim();
       const idEstudiante = document.getElementById('student-id').value.trim();
-
+    
       if (!nombre) {
         alert("Por favor ingresa tu nombre completo antes de continuar.");
         return;
       }
-
-      // Descarga local de comprobante PDF
+    
       const totalPiezas = generarPDF(nombre, idEstudiante);
-
+    
       if (canal === 'whatsapp') {
         let mensaje = `*¡Hola! He generado mi solicitud en PDF para GraficFest:*\n\n`;
         mensaje += `👤 *Solicitante:* ${nombre}\n`;
         mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n`;
         mensaje += `📊 *Total de piezas:* ${totalPiezas}\n\n`;
         mensaje += `📎 *He descargado mi solicitud en PDF para su validación.*`;
-
+    
         const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
         setTimeout(() => window.open(urlWsp, '_blank'), 1000);
-
+    
       } else if (canal === 'email') {
-        // Enviar pedido silenciosamente vía POST a tu Apps Script
         const payload = {
           nombre: nombre,
           idEstudiante: idEstudiante,
           carrito: carrito
         };
-
+    
         fetch(URL_API_SHEETS, {
           method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          mode: 'no-cors', // Importante para evitar bloqueos CORS con Google Apps Script
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         })
         .then(() => {
-          alert("¡Solicitud enviada con éxito! Se ha notificado por correo electrónico a la administración y se descargó una copia en tu dispositivo.");
+          alert("¡Solicitud enviada! Se ha generado tu PDF y enviado la notificación por correo.");
           carrito = [];
           actualizarCarritoUI();
           cerrarDrawer();
         })
         .catch(err => {
           console.error(err);
-          alert("Ocurrió un error al procesar la solicitud.");
+          alert("Ocurrió un error al intentar conectar con el servidor.");
         });
       }
     }
