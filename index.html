@@ -495,36 +495,51 @@
     function enviarPedido(canal) {
       const nombre = document.getElementById('student-name').value.trim();
       const idEstudiante = document.getElementById('student-id').value.trim();
-
+    
       if (!nombre) {
         alert("Por favor ingresa tu nombre completo antes de continuar.");
         return;
       }
-
-      // Generar PDF primero
+    
+      // Generar PDF para el estudiante
       const totalPiezas = generarPDF(nombre, idEstudiante);
-
+    
       if (canal === 'whatsapp') {
         let mensaje = `*¡Hola! He generado mi solicitud en PDF para GraficFest:*\n\n`;
         mensaje += `👤 *Solicitante:* ${nombre}\n`;
         mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n`;
         mensaje += `📊 *Total de piezas:* ${totalPiezas}\n\n`;
         mensaje += `📎 *Te adjunto el documento PDF descargado para su revisión.*`;
-
+    
         const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
         setTimeout(() => window.open(urlWsp, '_blank'), 1000);
-
+    
       } else if (canal === 'email') {
-        let asunto = `Solicitud de Recurso GraficFest - ${nombre}`;
-        let cuerpo = `Hola,\n\nSe ha generado una nueva solicitud de recursos para GraficFest:\n\n`;
-        cuerpo += `Solicitante: ${nombre}\n`;
-        cuerpo += `Matrícula / Proyecto: ${idEstudiante || 'No especificado'}\n`;
-        cuerpo += `Total de piezas: ${totalPiezas}\n\n`;
-        cuerpo += `Resumen del Pedido:\n`;
-
-        carrito.forEach(item => {
-          cuerpo += `- ${item.cantidad}x ${item.nombre} (${item.medidas})\n`;
+        // Envío automático silencioso por Apps Script
+        const payload = {
+          nombre: nombre,
+          idEstudiante: idEstudiante,
+          carrito: carrito
+        };
+    
+        fetch(URL_API_SHEETS, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(() => {
+          alert("¡Solicitud enviada con éxito! Se ha notificado por correo electrónico a la administración y se ha guardado una copia en tu dispositivo.");
+          carrito = [];
+          actualizarCarritoUI();
+          cerrarDrawer();
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Ocurrió un error al enviar el correo automático.");
         });
+      }
+    }
 
         cuerpo += `\n*Nota: Se ha descargado el PDF oficial en mi dispositivo y lo he adjuntado a este correo.*\n\nSaludos.`;
 
