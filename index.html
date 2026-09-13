@@ -63,7 +63,10 @@
     .btn:hover { opacity: 0.85; }
     .btn-dark { background: #111; color: #fff; }
     .btn-add { background: #0071e3; color: #fff; }
-    .btn-wsp { background: #25d366; color: #fff; font-size: 0.85rem; padding: 12px; margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-wsp { background: #25d366; color: #fff; font-size: 0.85rem; padding: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-email { background: #0071e3; color: #fff; font-size: 0.85rem; padding: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+    .action-buttons-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 
     .no-results { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #888; font-size: 0.9rem; }
 
@@ -196,9 +199,14 @@
         <span id="total-qty">0 unidades</span>
       </div>
       
-      <button id="btn-send-whatsapp" onclick="procesarPedidoYPDF()" class="btn btn-wsp" style="display: none;">
-        📄 Generar PDF y Abrir WhatsApp
-      </button>
+      <div class="action-buttons-group" id="cart-actions-group" style="display: none;">
+        <button onclick="enviarPedido('whatsapp')" class="btn btn-wsp">
+          💬 Enviar por WhatsApp
+        </button>
+        <button onclick="enviarPedido('email')" class="btn btn-email">
+          ✉️ Enviar por Correo Electrónico
+        </button>
+      </div>
     </div>
   </div>
 
@@ -222,6 +230,7 @@
 
   <script>
     const NUMERO_WHATSAPP = "50764595106";
+    const CORREO_DESTINO = "adrian.mendez1750@gmail.com";
     const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
     let inventarioCompleto = [];
@@ -341,7 +350,7 @@
       const cartCount = document.getElementById('cart-count');
       const totalQty = document.getElementById('total-qty');
       const formSection = document.getElementById('cart-form-section');
-      const btnWsp = document.getElementById('btn-send-whatsapp');
+      const actionsGroup = document.getElementById('cart-actions-group');
 
       const totalPiezas = carrito.reduce((sum, item) => sum + item.cantidad, 0);
       cartCount.innerText = totalPiezas;
@@ -352,12 +361,12 @@
       if (carrito.length === 0) {
         container.innerHTML = `<p style="text-align: center; color: #888; font-size: 0.85rem; margin-top: 40px;">Tu lista de pedido está vacía.</p>`;
         formSection.style.display = "none";
-        btnWsp.style.display = "none";
+        actionsGroup.style.display = "none";
         return;
       }
 
       formSection.style.display = "block";
-      btnWsp.style.display = "flex";
+      actionsGroup.style.display = "flex";
 
       carrito.forEach(item => {
         container.innerHTML += `
@@ -378,21 +387,11 @@
       });
     }
 
-    // --- GENERACIÓN DE PDF Y REDIRECCIÓN A WHATSAPP ---
-    function procesarPedidoYPDF() {
-      const nombre = document.getElementById('student-name').value.trim();
-      const idEstudiante = document.getElementById('student-id').value.trim();
-
-      if (!nombre) {
-        alert("Por favor ingresa tu nombre completo antes de continuar.");
-        return;
-      }
-
-      // 1. Generar Documento PDF
+    // --- GENERACIÓN DE PDF Y PROCESAMIENTO DE ENVÍOS ---
+    function generarPDF(nombre, idEstudiante) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      // Encabezado
       doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
       doc.text("GRAFICFEST 2026", 20, 20);
@@ -401,13 +400,11 @@
       doc.text("Solicitud Oficial de Mobiliario y Recursos", 20, 28);
       doc.line(20, 32, 190, 32);
 
-      // Datos del Estudiante
       doc.setFontSize(10);
       doc.text(`Solicitante: ${nombre}`, 20, 42);
       doc.text(`Matrícula / Proyecto: ${idEstudiante || 'N/A'}`, 20, 48);
       doc.text(`Fecha: ${new Date().toLocaleDateString('es-PA')}`, 20, 54);
 
-      // Encabezado de Tabla
       doc.setFont("helvetica", "bold");
       doc.text("ID", 20, 66);
       doc.text("Recurso", 45, 66);
@@ -415,7 +412,6 @@
       doc.text("Cant.", 170, 66);
       doc.line(20, 68, 190, 68);
 
-      // Filas de Productos
       doc.setFont("helvetica", "normal");
       let y = 76;
       let totalUnidades = 0;
@@ -434,7 +430,6 @@
       doc.setFont("helvetica", "bold");
       doc.text(`Total de Piezas Solicitadas: ${totalUnidades}`, 120, y);
 
-      // Firma
       y += 35;
       doc.line(20, y, 80, y);
       doc.line(120, y, 180, y);
@@ -442,22 +437,51 @@
       doc.text("Firma del Estudiante", 30, y + 5);
       doc.text("Aprobación Laboratorio / Profesor", 125, y + 5);
 
-      // Descargar PDF
       const nombreArchivo = `Solicitud_GraficFest_${nombre.replace(/\s+/g, '_')}.pdf`;
       doc.save(nombreArchivo);
 
-      // 2. Abrir WhatsApp con Mensaje Pre-armado
-      let mensaje = `*¡Hola! He generado mi solicitud en PDF para GraficFest:*\n\n`;
-      mensaje += `👤 *Solicitante:* ${nombre}\n`;
-      mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n`;
-      mensaje += `📊 *Total de piezas:* ${totalUnidades}\n\n`;
-      mensaje += `📎 *Te adjunto el documento PDF descargado para su revisión.*`;
+      return totalUnidades;
+    }
 
-      const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
-      
-      setTimeout(() => {
-        window.open(urlWsp, '_blank');
-      }, 1000);
+    function enviarPedido(canal) {
+      const nombre = document.getElementById('student-name').value.trim();
+      const idEstudiante = document.getElementById('student-id').value.trim();
+
+      if (!nombre) {
+        alert("Por favor ingresa tu nombre completo antes de continuar.");
+        return;
+      }
+
+      // Generar PDF primero
+      const totalPiezas = generarPDF(nombre, idEstudiante);
+
+      if (canal === 'whatsapp') {
+        let mensaje = `*¡Hola! He generado mi solicitud en PDF para GraficFest:*\n\n`;
+        mensaje += `👤 *Solicitante:* ${nombre}\n`;
+        mensaje += `📑 *Matrícula / Proyecto:* ${idEstudiante || 'No especificado'}\n`;
+        mensaje += `📊 *Total de piezas:* ${totalPiezas}\n\n`;
+        mensaje += `📎 *Te adjunto el documento PDF descargado para su revisión.*`;
+
+        const urlWsp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+        setTimeout(() => window.open(urlWsp, '_blank'), 1000);
+
+      } else if (canal === 'email') {
+        let asunto = `Solicitud de Recurso GraficFest - ${nombre}`;
+        let cuerpo = `Hola,\n\nSe ha generado una nueva solicitud de recursos para GraficFest:\n\n`;
+        cuerpo += `Solicitante: ${nombre}\n`;
+        cuerpo += `Matrícula / Proyecto: ${idEstudiante || 'No especificado'}\n`;
+        cuerpo += `Total de piezas: ${totalPiezas}\n\n`;
+        cuerpo += `Resumen del Pedido:\n`;
+
+        carrito.forEach(item => {
+          cuerpo += `- ${item.cantidad}x ${item.nombre} (${item.medidas})\n`;
+        });
+
+        cuerpo += `\n*Nota: Se ha descargado el PDF oficial en mi dispositivo y se adjunta a este correo.*\n\nSaludos.`;
+
+        const mailtoUrl = `mailto:${CORREO_DESTINO}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+        setTimeout(() => window.location.href = mailtoUrl, 1000);
+      }
     }
 
     // Abrir / Cerrar Drawer
