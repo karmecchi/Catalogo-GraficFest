@@ -268,7 +268,9 @@
   <script>
     const NUMERO_WHATSAPP = "50764595106";
     const CORREO_DESTINO = "adrian.mendez1750@gmail.com";
-    const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbw7NDx1SMI5sZQN8hh6VZAta4oj5VpFYOBslRf4MH17LXGqeJ9MdynK_6NIivHWZqlm/exec";
+    
+    // URL actualizada de la API de Apps Script
+    const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby6O24FkaY2B9mIhBpH4LjcDHFEPOqISyETdjhsaxY37nxvOkiFOLnTv5Boas17EPJk/exec";
 
     let inventarioCompleto = [];
     let criterioOrden = "todos";
@@ -523,7 +525,7 @@
     
         fetch(URL_API_SHEETS, {
           method: 'POST',
-          mode: 'no-cors', // Importante para evitar bloqueos CORS con Google Apps Script
+          mode: 'no-cors', // Evita bloqueos de seguridad CORS con Google Apps Script
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         })
